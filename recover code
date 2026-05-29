@@ -1,0 +1,171 @@
+// =====================================================
+// ESP32 RECEIVER CODE FOR JOYSTICK CAR
+// Joystick 1 = Forward / Backward
+// Joystick 2 = Left / Right
+// =====================================================
+
+#include <esp_now.h>
+#include <WiFi.h>
+
+// =====================================================
+// DATA STRUCTURE
+// Must match transmitter code
+// =====================================================
+
+typedef struct struct_message {
+
+  int joy1X;
+  int joy1Y;
+
+  int joy2X;
+  int joy2Y;
+
+} struct_message;
+
+struct_message data;
+
+
+// =====================================================
+// MOTOR DRIVER PINS
+// =====================================================
+
+#define IN1 27
+#define IN2 26
+#define IN3 25
+#define IN4 33
+
+
+// =====================================================
+// FUNCTION THAT RECEIVES DATA
+// =====================================================
+
+void OnDataRecv(const esp_now_recv_info *info,
+                const uint8_t *incomingData,
+                int len) {
+
+  // Copy incoming data
+  memcpy(&data, incomingData, sizeof(data));
+
+  // Read joystick values
+  int forwardBack = data.joy1Y;
+  int leftRight   = data.joy2X;
+
+  // Print values to Serial Monitor
+  Serial.print("Forward/Back: ");
+  Serial.print(forwardBack);
+
+  Serial.print(" | Left/Right: ");
+  Serial.println(leftRight);
+
+
+  // =====================================================
+  // FORWARD
+  // =====================================================
+
+  if (forwardBack > 3000) {
+
+    digitalWrite(IN1, HIGH);
+    digitalWrite(IN2, LOW);
+
+    digitalWrite(IN3, HIGH);
+    digitalWrite(IN4, LOW);
+  }
+
+
+  // =====================================================
+  // BACKWARD
+  // =====================================================
+
+  else if (forwardBack < 1000) {
+
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, HIGH);
+
+    digitalWrite(IN3, LOW);
+    digitalWrite(IN4, HIGH);
+  }
+
+
+  // =====================================================
+  // RIGHT
+  // =====================================================
+
+  else if (leftRight > 3000) {
+
+    digitalWrite(IN1, HIGH);
+    digitalWrite(IN2, LOW);
+
+    digitalWrite(IN3, LOW);
+    digitalWrite(IN4, HIGH);
+  }
+
+
+  // =====================================================
+  // LEFT
+  // =====================================================
+
+  else if (leftRight < 1000) {
+
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, HIGH);
+
+    digitalWrite(IN3, HIGH);
+    digitalWrite(IN4, LOW);
+  }
+
+
+  // =====================================================
+  // STOP
+  // =====================================================
+
+  else {
+
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, LOW);
+
+    digitalWrite(IN3, LOW);
+    digitalWrite(IN4, LOW);
+  }
+}
+
+
+// =====================================================
+// SETUP
+// =====================================================
+
+void setup() {
+
+  // Start Serial Monitor
+  Serial.begin(115200);
+
+  // Set motor pins as OUTPUT
+  pinMode(IN1, OUTPUT);
+  pinMode(IN2, OUTPUT);
+
+  pinMode(IN3, OUTPUT);
+  pinMode(IN4, OUTPUT);
+
+  // Set ESP32 as WiFi Station
+  WiFi.mode(WIFI_STA);
+
+  // Initialize ESP-NOW
+  if (esp_now_init() != ESP_OK) {
+
+    Serial.println("ESP-NOW Init Failed");
+    return;
+  }
+
+  // Register receive callback function
+  esp_now_register_recv_cb(OnDataRecv);
+
+  Serial.println("Receiver Ready");
+}
+
+
+// =====================================================
+// LOOP
+// =====================================================
+
+void loop() {
+
+}
