@@ -1,0 +1,49 @@
+#include <esp_now.h>
+#include <WiFi.h>
+
+typedef struct struct_message {
+  int joy1X;
+  int joy1Y;
+
+  int joy2X;
+  int joy2Y;
+} struct_message;
+
+struct_message data;
+
+uint8_t receiverMAC[] = {0x24, 0x6F, 0x28, 0xAA, 0xBB, 0xCC};
+
+esp_now_peer_info_t peerInfo;
+
+void setup() {
+
+  Serial.begin(115200);
+
+  WiFi.mode(WIFI_STA);
+
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("ESP-NOW Error");
+    return;
+  }
+
+  memcpy(peerInfo.peer_addr, receiverMAC, 6);
+  peerInfo.channel = 0;
+  peerInfo.encrypt = false;
+
+  esp_now_add_peer(&peerInfo);
+}
+
+void loop() {
+
+  data.joy1X = analogRead(34);
+  data.joy1Y = analogRead(35);
+
+  data.joy2X = analogRead(32);
+  data.joy2Y = analogRead(33);
+
+  esp_now_send(receiverMAC,
+               (uint8_t *) &data,
+               sizeof(data));
+
+  delay(50);
+}
